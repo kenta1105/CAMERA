@@ -1,0 +1,126 @@
+# ORB-SLAM3 実行環境構築手順 (Ubuntu 20.04, OpenCV 4.5, Pangolin 対応)
+
+このドキュメントでは、Ubuntu 20.04 環境において、ORB-SLAM3 を OpenCV 4.5 および Pangolin を用いて実行するための手順をまとめます。
+
+---
+
+## ▶ １. OpenCV 4.5.5 のインストール
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake git pkg-config
+sudo apt install libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev
+sudo apt install libv4l-dev libxvidcore-dev libx264-dev
+sudo apt install libjpeg-dev libpng-dev libtiff-dev
+sudo apt install libopenexr-dev libatlas-base-dev gfortran
+sudo apt install python3-dev
+
+cd ~
+git clone https://github.com/opencv/opencv.git
+cd opencv
+git checkout 4.5.5
+cd ..
+git clone https://github.com/opencv/opencv_contrib.git
+cd opencv_contrib
+git checkout 4.5.5
+cd ~/opencv
+mkdir build && cd build
+
+cmake -D CMAKE_BUILD_TYPE=Release \
+      -D CMAKE_INSTALL_PREFIX=/usr/local \
+      -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+      -D WITH_CUDA=OFF ..
+
+make -j$(nproc)
+sudo make install
+```
+
+確認:
+```bash
+pkg-config --modversion opencv4
+# => 4.5.5
+```
+
+---
+
+## ▶ ２. Pangolin のインストール
+
+```bash
+cd ~
+git clone https://github.com/stevenlovegrove/Pangolin.git
+cd Pangolin
+# 安定バージョンへチェックアウト（以下どちらかでOK）
+git checkout aff6883c83f3fd7e8268a9715e84266c42e2efe3  # または git checkout v0.6
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+sudo make install
+```
+
+---
+
+## ▶ ３. ORB-SLAM3 のインストール
+
+### ○ 必要ライブラリ
+```bash
+sudo apt install libeigen3-dev libsuitesparse-dev libboost-dev libboost-thread-dev libboost-filesystem-dev
+sudo apt install libgtk2.0-dev pkg-config libtbb-dev libglew-dev
+```
+
+### ○ リポジトリを取得し、安定バージョンへチェックアウト
+```bash
+cd ~
+git clone https://github.com/UZ-SLAMLab/ORB_SLAM3.git
+cd ORB_SLAM3
+git checkout v0.6
+```
+
+### ○ ビルド
+```bash
+chmod +x build.sh
+./build.sh
+```
+
+成功時の出力例:
+```
+[100%] Built target ORB_SLAM3
+```
+
+---
+
+## ▶ ４. 実行テスト
+
+### KITTI monocular を使う場合:
+```bash
+./Examples/Monocular/mono_kitti \
+    Vocabulary/ORBvoc.txt \
+    Examples/Monocular/KITTI00-02.yaml \
+    /path/to/KITTI/sequences/00
+```
+
+---
+
+## ▶ ５. 環境変数 (必要に応じて)
+```bash
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+```
+
+---
+
+## ▶ 【補足】カメラ画像で実行したい場合
+- `mono_tum.cc` をベースにリアルタイムカメラ入力に変更
+- または保存済みの画像列＋タイムスタンプを用意し `mono_tum` を利用
+
+---
+
+## ▶ 【補足】トラブルシューティング
+- `Pangolin` の master が壊れている場合があるので、commit `aff6883c...` か `v0.6` を使う
+- `OpenCV` のバージョンは 4.4 以上必須
+- `libffi` などのシンボル解決エラーは `libffi-dev` 再インストール
+  ```bash
+  sudo apt install --reinstall libffi-dev
+  ```
+
+---
+
+これで ORB-SLAM3 のビルドと実行環境が整いました。
